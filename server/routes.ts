@@ -9,6 +9,7 @@ import {
 } from "@shared/schema";
 import axios from "axios";
 import { openaiService } from "./openaiService";
+import { simulationService } from "./simulationService";
 
 // Helper for validating request body
 function validateBody<T>(schema: z.ZodType<T>, body: any): T {
@@ -35,19 +36,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const configData = validateBody(insertConfigSchema, req.body);
       
-      // Test Frappe CRM connectivity
-      try {
-        const response = await axios.get(`${configData.apiUrl}/method/frappe.auth.get_logged_user`, {
-          headers: {
-            "Authorization": `token ${configData.apiKey}:${configData.apiSecret}`
+      // Check if using simulation mode (special value for apiUrl)
+      const isSimulationMode = configData.apiUrl === "simulation";
+      
+      if (!isSimulationMode) {
+        // Test Frappe CRM connectivity
+        try {
+          const response = await axios.get(`${configData.apiUrl}/method/frappe.auth.get_logged_user`, {
+            headers: {
+              "Authorization": `token ${configData.apiKey}:${configData.apiSecret}`
+            }
+          });
+          
+          if (!response.data || response.status !== 200) {
+            return res.status(401).json({ message: "Failed to connect to Frappe CRM. Please check your credentials." });
           }
-        });
-        
-        if (!response.data || response.status !== 200) {
+        } catch (error) {
           return res.status(401).json({ message: "Failed to connect to Frappe CRM. Please check your credentials." });
         }
-      } catch (error) {
-        return res.status(401).json({ message: "Failed to connect to Frappe CRM. Please check your credentials." });
+      } else {
+        // Simulation mode doesn't need real validation
+        console.log("Using Frappe CRM simulation mode");
       }
       
       // Check if configuration already exists for this user
@@ -171,24 +180,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required parameters" });
       }
       
-      try {
-        const response = await axios.get(`${apiUrl}/api/resource/${doctype}`, {
-          headers: {
-            "Authorization": `token ${apiKey}:${apiSecret}`
-          },
-          params: {
-            filters: JSON.stringify(filters),
-            fields: JSON.stringify(fields),
-            limit_page_length: limit
+      // Check if using simulation mode
+      const isSimulationMode = apiUrl === "simulation";
+      
+      if (isSimulationMode) {
+        // Use simulation service
+        try {
+          let simulationResponse;
+          
+          if (doctype === "Lead") {
+            simulationResponse = simulationService.getLeads(filters);
+          } else if (doctype === "Task") {
+            simulationResponse = simulationService.getTasks(filters);
+          } else if (doctype === "Opportunity") {
+            simulationResponse = simulationService.getOpportunities(filters);
+          } else {
+            // Default empty response for unsupported doctypes
+            simulationResponse = { data: { results: [] } };
           }
-        });
-        
-        return res.status(200).json(response.data);
-      } catch (error) {
-        if (error.response) {
-          return res.status(error.response.status).json(error.response.data);
+          
+          return res.status(200).json(simulationResponse);
+        } catch (simError: any) {
+          console.error("Simulation error:", simError);
+          return res.status(500).json({ message: simError.message || "Simulation error" });
         }
-        throw error;
+      } else {
+        // Use real Frappe CRM API
+        try {
+          const response = await axios.get(`${apiUrl}/api/resource/${doctype}`, {
+            headers: {
+              "Authorization": `token ${apiKey}:${apiSecret}`
+            },
+            params: {
+              filters: JSON.stringify(filters),
+              fields: JSON.stringify(fields),
+              limit_page_length: limit
+            }
+          });
+          
+          return res.status(200).json(response.data);
+        } catch (apiError: any) {
+          if (apiError.response) {
+            return res.status(apiError.response.status).json(apiError.response.data);
+          }
+          throw apiError;
+        }
       }
     } catch (error) {
       return handleApiError(res, error);
@@ -203,20 +239,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required parameters" });
       }
       
-      try {
-        const response = await axios.post(`${apiUrl}/api/method/${method}`, args, {
-          headers: {
-            "Authorization": `token ${apiKey}:${apiSecret}`,
-            "Content-Type": "application/json"
-          }
-        });
-        
-        return res.status(200).json(response.data);
-      } catch (error) {
-        if (error.response) {
-          return res.status(error.response.status).json(error.response.data);
+      // Check if using simulation mode
+      const isSimulationMode = apiUrl === "simulation";
+      
+      if (isSimulationMode) {
+        // Simulation mode handles methods differently
+        try {
+          // For now, just return a success response
+          // In a real app, you might want to simulate different method responses
+          return res.status(200).json({ 
+            message: "Method executed successfully in simulation mode",
+            method,
+            simulated: true,
+            success: true
+          });
+        } catch (simError: any) {
+          console.error("Simulation method error:", simError);
+          return res.status(500).json({ message: simError.message || "Simulation error" });
         }
-        throw error;
+      } else {
+        // Use real Frappe CRM API
+        try {
+          const response = await axios.post(`${apiUrl}/api/method/${method}`, args, {
+            headers: {
+              "Authorization": `token ${apiKey}:${apiSecret}`,
+              "Content-Type": "application/json"
+            }
+          });
+          
+          return res.status(200).json(response.data);
+        } catch (apiError: any) {
+          if (apiError.response) {
+            return res.status(apiError.response.status).json(apiError.response.data);
+          }
+          throw apiError;
+        }
       }
     } catch (error) {
       return handleApiError(res, error);
@@ -262,26 +319,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let actionResult = null;
         
         if (nlpResponse.action) {
+          // Check if using simulation mode
+          const isSimulationMode = apiUrl === "simulation";
+          
           // Handle actions based on the action type
           if (nlpResponse.action.type === "fetch_data" && nlpResponse.action.parameters?.doctype) {
-            // Example: Fetch data from Frappe CRM
             try {
               const filters = nlpResponse.action.parameters.filters || [];
               const fields = nlpResponse.action.parameters.fields || ["*"];
               const limit = nlpResponse.action.parameters.limit || 20;
               
-              const response = await axios.get(`${apiUrl}/api/resource/${nlpResponse.action.parameters.doctype}`, {
-                headers: {
-                  "Authorization": `token ${apiKey}:${apiSecret}`
-                },
-                params: {
-                  filters: JSON.stringify(filters),
-                  fields: JSON.stringify(fields),
-                  limit_page_length: limit
+              if (isSimulationMode) {
+                // Use simulation service
+                const doctype = nlpResponse.action.parameters.doctype;
+                
+                if (doctype === "Lead") {
+                  actionResult = simulationService.getLeads(filters);
+                } else if (doctype === "Task") {
+                  actionResult = simulationService.getTasks(filters);
+                } else if (doctype === "Opportunity") {
+                  actionResult = simulationService.getOpportunities(filters);
+                } else {
+                  // Default empty response for unsupported doctypes
+                  actionResult = { data: { results: [] } };
                 }
-              });
-              
-              actionResult = response.data;
+              } else {
+                // Use real Frappe CRM API
+                const response = await axios.get(`${apiUrl}/api/resource/${nlpResponse.action.parameters.doctype}`, {
+                  headers: {
+                    "Authorization": `token ${apiKey}:${apiSecret}`
+                  },
+                  params: {
+                    filters: JSON.stringify(filters),
+                    fields: JSON.stringify(fields),
+                    limit_page_length: limit
+                  }
+                });
+                
+                actionResult = response.data;
+              }
             } catch (actionError: any) {
               console.error("Error executing Frappe CRM action:", actionError);
             }
