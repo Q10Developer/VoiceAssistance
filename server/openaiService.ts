@@ -99,16 +99,31 @@ export class OpenAIService {
    * Generate a system prompt for the OpenAI model
    */
   private getSystemPrompt(credentials: FrappeCredentials): string {
+    // Check if we're using simulation mode
+    const isSimulationMode = credentials.apiUrl === "simulation";
+    const modeInfo = isSimulationMode 
+      ? "You are running in SIMULATION MODE with pre-configured test data." 
+      : `You have access to a Frappe CRM instance at: ${credentials.apiUrl || "[URL not configured]"}`;
+    
     return `
 You are an AI voice assistant for Frappe CRM. Your primary role is to help users interact with their Frappe CRM system using natural language voice commands.
 
-You have access to a Frappe CRM instance at: ${credentials.apiUrl || "[URL not configured]"}
+${modeInfo}
 
 When responding to queries:
 1. Analyze the user's intent
 2. Format your response in a conversational, helpful manner
 3. Keep responses concise and focused on CRM-related information
 4. If you need to fetch or modify data in the CRM, indicate that clearly
+
+${isSimulationMode ? `
+In SIMULATION MODE, you have access to the following sample data types:
+- Leads: 5 sample leads with various statuses and sources
+- Tasks: 5 sample tasks with different priorities and due dates
+- Opportunities: 5 sample opportunities with different values and stages
+
+When users ask about specific CRM data in simulation mode, craft responses as if you're working with this simulated data.
+` : ''}
 
 Respond with a valid JSON object that contains the following fields:
 - intent: A string representing the detected user intent (e.g., "get_leads", "create_task", "search_contacts")

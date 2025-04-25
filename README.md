@@ -1,100 +1,105 @@
 # Frappe CRM Voice Assistant
 
-A voice-controlled assistant that integrates with Frappe CRM to enable natural language voice interactions with your CRM system.
+A voice-operated assistant that integrates with Frappe CRM to enable voice-controlled CRM operations.
 
-![Frappe CRM Voice Assistant](https://via.placeholder.com/800x400?text=Frappe+CRM+Voice+Assistant)
+## Features
 
-## Overview
+- 🎙️ **Voice Recognition**: Interact with your CRM using natural voice commands
+- 🤖 **NLP Processing**: Advanced natural language processing powered by OpenAI
+- 🔄 **Frappe CRM Integration**: Connect to your existing Frappe CRM instance
+- 🧪 **Simulation Mode**: Test with simulated data without a real CRM connection
+- 💬 **Conversation History**: Review past interactions and responses
+- ⚙️ **Customizable Voice Settings**: Adjust voice, speech rate, and other preferences
 
-This application allows users to interact with their Frappe CRM using voice commands. It leverages modern web speech APIs combined with advanced natural language processing to understand user intent and perform CRM operations.
-
-### Key Features
-
-- **Voice Command Recognition**: Speak naturally to control your CRM
-- **OpenAI-Powered NLP**: Sophisticated understanding of CRM-related queries
-- **Frappe CRM Integration**: Connect to any Frappe CRM instance
-- **Conversational Interface**: Natural dialogue with your CRM system
-- **Voice Response**: Hear responses from your CRM read aloud
-- **Command History**: Keep track of past interactions
-
-## Setup
+## Getting Started
 
 ### Prerequisites
 
-- Node.js (v16+)
-- Frappe CRM instance with API access
+- Node.js 16+
 - OpenAI API key
+- (Optional) Frappe CRM instance with API credentials
 
 ### Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/frappe-crm-voice-assistant.git
-cd frappe-crm-voice-assistant
-```
-
+1. Clone the repository
 2. Install dependencies:
 ```bash
 npm install
 ```
-
-3. Set up environment variables:
-Create a `.env` file with:
-```
-OPENAI_API_KEY=your_openai_api_key
-```
-
+3. Add your OpenAI API key to environment variables
 4. Start the development server:
 ```bash
 npm run dev
 ```
 
-## Usage
+## Using Simulation Mode
 
-1. Open the application in a supported browser (Chrome recommended for best speech recognition)
-2. Configure your Frappe CRM connection in the settings panel:
-   - Enter your Frappe CRM API URL
-   - Add your API Key and Secret
-3. Click the microphone button and speak your command
-4. The assistant will process your request and respond both visually and audibly
+For testing without a real Frappe CRM connection, use the simulation mode:
 
-### Example Commands
+1. In the Configuration panel, enter:
+   - API URL: `simulation`
+   - API Key: `test`
+   - API Secret: `test`
 
-- "Show me all leads from last month"
-- "Create a new task to follow up with ABC Company"
-- "What's the status of the deal with TechCorp?"
-- "Schedule a meeting with John from Acme Inc."
-- "Summarize the open opportunities this quarter"
+2. Click "Save Configuration"
 
-## Architecture
+3. Try voice commands like:
+   - "Show me all open leads"
+   - "Find opportunities worth more than 20,000 dollars"
+   - "What tasks are due this week?"
 
-The application consists of:
+## Project Structure
 
-- **React Frontend**: Modern UI with speech recognition and synthesis
-- **Express Backend**: API layer for CRM interactions and NLP processing
-- **OpenAI Integration**: Natural language understanding and intent recognition
-- **Frappe CRM Connector**: Secure API communication with Frappe
+- `client/`: React frontend application
+  - `src/components/`: React components
+  - `src/hooks/`: Custom React hooks
+  - `src/pages/`: Application pages
+  - `src/lib/`: Utility and service files
+  - `src/types/`: TypeScript type definitions
+- `server/`: Node.js backend
+  - `index.ts`: Main server file
+  - `routes.ts`: API endpoints
+  - `storage.ts`: Data storage implementation
+  - `openaiService.ts`: OpenAI integration
+  - `simulationService.ts`: Simulation service for testing
+- `shared/`: Shared code between frontend and backend
+  - `schema.ts`: Database schema and types
 
-## Technologies
+## Voice Commands
 
-- React + TypeScript
-- TanStack Query for data fetching
-- Tailwind CSS + shadcn/ui for styling
-- Web Speech API for voice interactions
+The assistant can understand various types of commands:
+
+### Query Commands
+- "Show me all open leads"
+- "Find opportunities worth more than 20,000 dollars"
+- "What tasks are due this week?"
+
+### Creation Commands
+- "Create a new lead for Jane Smith at Acme Corp"
+- "Add a task to follow up with John from TechCorp tomorrow"
+
+### Summary Commands
+- "Summarize this month's opportunities"
+- "How many open leads do we have?"
+
+## Technical Details
+
+This project uses:
+
+- React with TypeScript for the frontend
+- Express.js for the backend
 - OpenAI API for natural language processing
-- Express for backend services
-- Drizzle ORM for data management
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+- Web Speech API for voice recognition and synthesis
+- TanStack Query for data fetching
+- Shadcn UI components with Tailwind CSS for styling
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License
 
-## Acknowledgments
+## Acknowledgements
 
-- Frappe CRM team for their excellent API
-- OpenAI for advanced natural language processing capabilities
-- Web Speech API for making voice interactions possible in the browser
+- [Frappe](https://frappeframework.com/)
+- [OpenAI](https://openai.com/)
+- [React](https://reactjs.org/)
+- [Shadcn UI](https://ui.shadcn.com/)
